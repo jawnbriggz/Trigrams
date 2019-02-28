@@ -1,82 +1,146 @@
 
-def trigramGenerator(x):
+import re
+import sys
+import string
+import operator
 
-	sentence = []
+def book_parser(x):
+
+	full_text = []
+
 	for line in x:
+#		strip of punctuation and lowercase it
+		line = line.lower()
+		line = line.translate(str.maketrans('','',string.punctuation))
 		temp = line.split()
-		sentence += temp
+		full_text += temp	
 
-	gramsList = []
+	OVERALL_LENGTH = len(full_text)
+
+	return(full_text, OVERALL_LENGTH)
+
+
+def gramGenerator(full_text, OVERALL_LENGTH):
+
+	unigrams = {}
+	bigrams = {}
+	trigrams = {}
 
 	first = 0
 	second = 1
 	third = 2
-	for gram in sentence:
-		if(first <= (len(sentence) - 3)):
-			trigram = []
-			trigram.append(sentence[first])
-			trigram.append(sentence[second])
-			trigram.append(sentence[third])
-			gramsList.append(trigram)
+
+	for t in full_text:
+
+#		construct grams
+		bigram = []
+		trigram = []
+
+		if(first <= OVERALL_LENGTH - 3):
+			trigram.append(full_text[first])
+			trigram.append(full_text[second])
+			trigram.append(full_text[third])
+
+		if(first <= OVERALL_LENGTH - 2):
+			bigram.append(full_text[first])
+			bigram.append(full_text[second])
+
 		first += 1
 		second += 1
-		third += 1	
+		third += 1
 
-	return gramsList	
+		s = gram_to_string(trigram)
+		strang = gram_to_string(bigram)
 
-def countTrigram(gramsList):
+#		create the dictionaries
+		if(s in trigrams):
+			trigrams[s] += 1
+		else:
+			trigrams[s] = 1
 
-	countsList = []
+		if(strang in bigrams):
+			bigrams[strang] += 1
+		else:
+			bigrams[strang] = 1
 
-	for trigram in gramsList:
-		count = 0
-		for t in gramsList:
-			if(t == trigram):
-				count += 1
-		countsList.append(count)
+		if(t in unigrams):
+			unigrams[t] += 1
+		else:
+			unigrams[t] = 1	
 
-	return countsList
+	return(unigrams, bigrams, trigrams)
 
-def getMostOccuring(countsList, gramsList):
+
+def gram_to_string(gram):
+
+	s = ""
 	idx = 0
-	maxOccurences = 0
-	bestIdx = 0
-	for x in countsList:
-		if(x > maxOccurences):
-			maxOccurences = x
-			bestIdx = idx
-		idx +=1
+	y = len(gram)
+	for w in gram:
+		if(idx == y):
+			s += w
+		else:
+			s += w
+			s += " "
+		idx += 1
 
-	beginning = gramsList[bestIdx]
-	return beginning
+	return s
+
+
+def print_to_file(bigrams, trigrams):
+
+#	save trigrams and # of occurrences to a file
+	file = open("trigrams_output.txt", "w")
+
+	for t in trigrams:
+		count = str(trigrams[t])
+		file.write(t)
+		file.write("	")
+		file.write(count)
+		file.write("\n")
+
+	file.close()
+
+#	save bigrams and # of occurrences to a file
+	file = open("bigrams_output.txt", "w")
+
+	for t in bigrams:
+		count = str(bigrams[t])
+		file.write(t)
+		file.write("	")
+		file.write(count)
+		file.write("\n")
+
+	file.close()
 
 
 def main():
 
-	book = "catinthehat.txt"
+	book = sys.argv[1]
 
+#	open the file, do what you gotta do and then close it.
 	x = open(book)
 
-	print("MODE: ", x.mode)
+	parsed_text = book_parser(x)
+	text = parsed_text[0]
+	OVERALL_LENGTH = parsed_text[1]
 
-	gramsList = trigramGenerator(x)	
-	countsList = countTrigram(gramsList)
+	x.close()
 
-	start = getMostOccuring(countsList, gramsList)
+#	GET THE GRAMS
+	grams = gramGenerator(text, OVERALL_LENGTH)
 
-	print(start)
+	unigrams = grams[0]
+	bigrams = grams[1]
+	trigrams = grams[2]
 
-	file = open("trigrams_output.txt", "w")
+	most_occurring_word = max(unigrams.items(), key=operator.itemgetter(1))[0]
+	most_occurring_bigram = max(bigrams.items(), key=operator.itemgetter(1))[0]
+	most_occurring_trigram = max(trigrams.items(), key=operator.itemgetter(1))[0]
 
-	idx = 0
-	for g in gramsList:
-		file.write(str(g))
-		file.write("	")
-		file.write(str(countsList[idx]))
-		file.write("\n")
+	print("THE MOST OCCURRING WORD: ", most_occurring_word)
+	print("THE MOST OCCURRING BIGRAM: ", most_occurring_bigram)
+	print("THE MOST OCCURRING TRIGRAM: ", most_occurring_trigram)
 
-		idx += 1
-
-	file.close()
 
 main()
